@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Krishan Kumar Verma — agent reliability and AI oversight</title>
+<meta name="description" content="I build AI agents, measure whether what they report matches what they did, and publish where oversight breaks.">
+<meta name="author" content="Krishan Kumar Verma">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Krishan Kumar Verma — agent reliability and AI oversight">
+<meta property="og:description" content="An agent's account of its own work is not evidence of what it did. 160 runs, four tasks, two models, zero honest failures.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Krishan Kumar Verma — agent reliability and AI oversight">
+<meta name="twitter:description" content="An agent's account of its own work is not evidence of what it did. 160 runs, four tasks, two models, zero honest failures.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5FA; --panel:rgba(255,255,255,.75); --panel2:rgba(255,255,255,.55); --rule:rgba(15,26,40,.12);
+  --ink:#0C1420; --muted:#5A6778; --a1:#5B5BD6; --a2:#1F9CB8; --ok:#1F7A5A; --bad:#B4452F;
+  --edge:rgba(91,91,214,.28); --shadow:0 18px 40px -28px rgba(12,20,32,.55);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#04060B; --panel:rgba(18,24,38,.62); --panel2:rgba(26,33,50,.55); --rule:rgba(255,255,255,.09);
+    --ink:#EAF0F8; --muted:#8E9BB0; --a1:#8B7BFF; --a2:#3FD0E0; --ok:#4FD1A1; --bad:#FF8D73;
+    --edge:rgba(139,123,255,.38); --shadow:0 24px 60px -30px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#04060B; --panel:rgba(18,24,38,.62); --panel2:rgba(26,33,50,.55); --rule:rgba(255,255,255,.09);
+  --ink:#EAF0F8; --muted:#8E9BB0; --a1:#8B7BFF; --a2:#3FD0E0; --ok:#4FD1A1; --bad:#FF8D73;
+  --edge:rgba(139,123,255,.38); --shadow:0 24px 60px -30px rgba(0,0,0,.9);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 1rem);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.6 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+/* ambient field */
+.orb{position:fixed;border-radius:50%;filter:blur(70px);opacity:.55;z-index:0;pointer-events:none}
+.orb.a{width:46vw;height:46vw;left:-12vw;top:-14vw;background:radial-gradient(circle,var(--a1),transparent 62%)}
+.orb.b{width:40vw;height:40vw;right:-10vw;top:6vh;background:radial-gradient(circle,var(--a2),transparent 62%);opacity:.38}
+.orb.c{width:52vw;height:52vw;left:22vw;bottom:-26vw;background:radial-gradient(circle,var(--a1),transparent 65%);opacity:.22}
+.grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000,transparent 75%);
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000,transparent 75%)}
+a{color:inherit}
+a:focus-visible{outline:2px solid var(--a1);outline-offset:3px;border-radius:6px}
+
+.shell{position:relative;z-index:1;display:grid;grid-template-columns:18.5rem 1fr;gap:1.25rem;max-width:86rem;margin:0 auto;padding:1.25rem}
+.glass{background:var(--panel);border:1px solid var(--rule);border-radius:18px;padding:1.5rem;position:relative;
+  -webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);box-shadow:var(--shadow)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
+  background:linear-gradient(140deg,var(--edge),transparent 42%,transparent 60%,color-mix(in srgb,var(--a2) 35%,transparent));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.inset{background:var(--panel2);border:1px solid var(--rule);border-radius:12px}
+
+#prog{position:fixed;top:env(safe-area-inset-top,0px);left:0;height:2px;width:0;z-index:9;background:linear-gradient(90deg,var(--a1),var(--a2));transition:width .12s linear}
+
+aside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 1.25rem);align-self:start;display:flex;flex-direction:column;gap:1rem}
+.me{display:flex;gap:1rem;align-items:center;padding:1.1rem}
+.mono{width:3.4rem;height:3.4rem;flex:none;display:grid;place-items:center;border-radius:12px;font-weight:800;color:#fff;
+  background:linear-gradient(140deg,var(--a1),var(--a2));box-shadow:0 8px 24px -10px var(--a1)}
+.me strong{display:block;font-size:1.0625rem;line-height:1.25}
+.me span{display:block;color:var(--muted);font-size:.875rem}
+nav ul{list-style:none;margin:0;padding:.5rem;display:flex;flex-direction:column;gap:.15rem}
+nav a{display:block;padding:.7rem .9rem;border-radius:10px;text-decoration:none;color:var(--muted);font-weight:600;border:1px solid transparent;transition:.25s}
+nav a:hover{color:var(--ink);transform:translateX(3px)}
+nav a.on{color:var(--ink);background:var(--panel2);border-color:var(--rule);box-shadow:inset 0 0 0 1px var(--edge)}
+.side-links{display:flex;gap:.5rem;flex-wrap:wrap;padding:.75rem}
+.side-links a{flex:1 1 auto;text-align:center;padding:.6rem .7rem;font-size:.875rem;font-weight:700;text-decoration:none;transition:.25s}
+.side-links a:hover{border-color:var(--a1);transform:translateY(-2px);box-shadow:0 10px 24px -16px var(--a1)}
+
+main{display:flex;flex-direction:column;gap:1.25rem;min-width:0}
+.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:1.25rem}
+.chips{display:flex;flex-wrap:wrap;gap:.6rem;margin:0 0 1.5rem;padding:0;list-style:none}
+.chips li{padding:.5rem .9rem;font-size:.8125rem;font-weight:700;display:flex;align-items:center;gap:.5rem;border-radius:99px}
+.dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--ok);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}50%{box-shadow:0 0 0 7px transparent}}
+h1{font-size:clamp(2rem,3.9vw,3.1rem);line-height:1.06;letter-spacing:-.03em;font-weight:800;margin:0 0 1rem}
+h1 .grad{background:linear-gradient(120deg,var(--a1),var(--a2) 70%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--muted);margin:0 0 .8rem;max-width:58ch}
+
+.thead{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem}
+.thead h2{font-size:1rem;margin:0;font-weight:700}
+.btn{font:700 .8125rem/1 Manrope,sans-serif;color:var(--ink);background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:.6rem .9rem;cursor:pointer;transition:.25s}
+.btn:hover{border-color:var(--a1);transform:translateY(-1px);box-shadow:0 10px 24px -16px var(--a1)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.cols>div{padding:.9rem}
+.cols h3{font-size:.8125rem;font-weight:700;margin:0 0 .6rem;color:var(--muted)}
+.cols ol{margin:0;padding:0;list-style:none;font:400 .78rem/1.5 "JetBrains Mono",ui-monospace,Menlo,monospace}
+.cols li{padding:.35rem 0;border-top:1px dashed var(--rule);opacity:.22;transform:translateY(3px);transition:.35s}
+.cols li:first-child{border-top:0}
+.cols li.lit{opacity:1;transform:none}
+.cols .n{color:var(--muted);margin-right:.4rem}
+.claim{color:var(--ok);font-weight:500}.real{color:var(--bad);font-weight:500}
+.cap{font-size:.8125rem;color:var(--muted);margin:.9rem 0 0;min-height:2.6em}
+
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:0 0 1.25rem}
+.sec-head h2{margin:0;font-size:1.0625rem;font-weight:700;padding:.55rem 1.1rem;border-radius:99px}
+.sec-head p{margin:0;color:var(--muted);font-size:.875rem;max-width:44ch;text-align:right}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.stat{padding:1.25rem;transition:.3s;overflow:hidden;position:relative}
+.stat:hover{transform:translateY(-4px);border-color:var(--a1);box-shadow:0 22px 44px -30px var(--a1)}
+.stat b{display:block;font-size:clamp(1.5rem,2.5vw,2.1rem);font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;
+  background:linear-gradient(120deg,var(--ink),var(--a1));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat span{display:block;margin-top:.6rem;color:var(--muted);font-size:.875rem;line-height:1.5}
+.caveat{margin:1rem 0 0;color:var(--muted);font-size:.875rem}
+
+.fig2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+.dom{padding:1rem;font:400 .8rem/1.5 "JetBrains Mono",ui-monospace,Menlo,monospace}
+.dom div{padding:.5rem .65rem;border-radius:8px;margin:.3rem 0;border:1px solid transparent;transition:all .5s cubic-bezier(.2,.7,.3,1)}
+.dom div.danger{border-color:var(--bad);color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);box-shadow:0 0 22px -10px var(--bad)}
+.gauge{padding:1.25rem;text-align:center}
+.gauge b{font-size:2.5rem;font-weight:800;font-variant-numeric:tabular-nums;display:block;transition:color .4s}
+.bar{height:9px;border-radius:99px;background:var(--panel2);border:1px solid var(--rule);overflow:hidden;margin:.9rem 0 .5rem}
+.bar i{display:block;height:100%;width:0;transition:width .8s cubic-bezier(.2,.7,.3,1),background .4s}
+.gauge small{color:var(--muted);font-size:.8125rem}
+.toggle{display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
+.toggle button{flex:1 1 auto}
+.toggle button[aria-pressed="true"]{border-color:var(--a1);color:var(--a1);box-shadow:inset 0 0 0 1px var(--edge)}
+
+.chart{display:flex;flex-direction:column;gap:.75rem;margin:0}
+.row{display:grid;grid-template-columns:17rem 1fr 4.5rem;gap:.75rem;align-items:center;font-size:.875rem}
+.row>span:first-child{color:var(--muted)}
+.track{height:22px;border-radius:8px;background:var(--panel2);border:1px solid var(--rule);overflow:hidden}
+.track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a1),var(--a2));transition:width 1.1s cubic-bezier(.2,.7,.3,1)}
+.row.low .track i{background:linear-gradient(90deg,var(--bad),color-mix(in srgb,var(--bad) 55%,var(--a1)))}
+.row b{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:680px){.row{grid-template-columns:1fr;gap:.25rem}.row b{text-align:left}}
+
+.matrix{width:100%;border-collapse:separate;border-spacing:.45rem;font-size:.875rem}
+.matrix th{font-weight:700;color:var(--muted);text-align:left;padding:.25rem .4rem}
+.matrix td{padding:.75rem .85rem;border-radius:10px;background:var(--panel2);border:1px solid var(--rule);font-weight:700;white-space:nowrap}
+.matrix td.pass{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 42%,transparent)}
+.matrix td.silent{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 48%,transparent);background:color-mix(in srgb,var(--bad) 10%,var(--panel2));box-shadow:0 0 26px -16px var(--bad)}
+.matrix td:first-child{color:var(--ink);font-weight:500;white-space:normal}
+.mwrap{overflow-x:auto}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.proj{padding:1.35rem;display:flex;flex-direction:column;transition:.3s}
+.proj:hover{transform:translateY(-4px);border-color:var(--a1);box-shadow:0 24px 50px -34px var(--a1)}
+.proj h3{margin:0 0 .2rem;font-size:1.125rem;font-weight:700}
+.proj h3 a{text-decoration:none}
+.tag{font-size:.8125rem;font-weight:700;margin:0 0 .75rem;
+  background:linear-gradient(120deg,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.proj p{margin:0 0 .6rem;font-size:.9375rem}
+.proj ul{margin:0;padding-left:1.1rem;font-size:.9375rem;color:var(--muted)}
+.proj li{margin:.3rem 0}
+.proj li b{color:var(--ink);font-weight:600}
+code{font:.85em "JetBrains Mono",ui-monospace,Menlo,monospace;background:var(--panel2);border:1px solid var(--rule);padding:.05em .35em;border-radius:5px}
+
+.ledger{list-style:none;margin:0;padding:0 0 0 1.25rem;border-left:1px dashed var(--rule)}
+.ledger li{position:relative;padding:0 0 1.25rem 1rem}
+.ledger li:last-child{padding-bottom:0}
+.ledger li::before{content:"";position:absolute;left:-1.62rem;top:.45rem;width:.62rem;height:.62rem;background:var(--bad);border-radius:3px;box-shadow:0 0 16px -4px var(--bad)}
+.ledger li.fixed::before{background:var(--ok);box-shadow:0 0 16px -4px var(--ok)}
+.ledger small{display:block;color:var(--muted);font-weight:700;font-size:.8125rem}
+.ledger p{margin:.15rem 0 0;max-width:64ch}
+
+.contact{display:flex;flex-wrap:wrap;gap:.75rem}
+.contact a{padding:.8rem 1.2rem;text-decoration:none;font-weight:700;transition:.25s}
+.contact a:hover{border-color:var(--a1);transform:translateY(-2px);box-shadow:0 14px 30px -20px var(--a1)}
+footer{color:var(--muted);font-size:.8125rem;padding:.25rem .25rem 1rem}
+
+.rv{opacity:0;transform:translateY(16px)}
+.rv.in{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.3,1)}
+
+@media (max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.hero,.fig2{grid-template-columns:1fr}}
+@media (max-width:860px){.shell{grid-template-columns:1fr}aside{position:static}nav{display:none}.grid2{grid-template-columns:1fr}.orb{filter:blur(48px)}}
+@media (max-width:520px){.cols{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.sec-head{flex-direction:column;align-items:flex-start}.sec-head p{text-align:left}.glass{padding:1.15rem;border-radius:16px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}.cols li{opacity:1;transform:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a href="#top" style="position:absolute;left:-9999px;top:0;z-index:20;padding:.7rem 1rem;background:var(--panel2);border:1px solid var(--rule);border-radius:10px" onfocus="this.style.left='1rem';this.style.top='1rem'" onblur="this.style.left='-9999px'">Skip to content</a>
+<div id="prog"></div>
+<div class="grid-bg" aria-hidden="true"></div>
+<div class="orb a" aria-hidden="true"></div><div class="orb b" aria-hidden="true"></div><div class="orb c" aria-hidden="true"></div>
+
+<div class="shell">
+<aside>
+  <div class="glass me">
+    <div class="mono" aria-hidden="true">KV</div>
+    <div><strong>Krishan Kumar Verma</strong><span>Agent reliability and AI oversight</span><span>India, working remotely</span></div>
+  </div>
+  <nav class="glass" style="padding:0" aria-label="Sections">
+    <ul>
+      <li><a href="#top" class="on">Overview</a></li>
+      <li><a href="#findings">Findings</a></li>
+      <li><a href="#mechanism">The mechanism</a></li>
+      <li><a href="#oversight">Where oversight breaks</a></li>
+      <li><a href="#work">Work</a></li>
+      <li><a href="#wrong">What I got wrong</a></li>
+      <li><a href="#writing">Writing</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+  <div class="glass side-links" style="padding:.75rem">
+    <a class="inset" href="https://www.linkedin.com/in/krishankverma">LinkedIn</a>
+    <a class="inset" href="https://github.com/KrishanKVerma">GitHub</a>
+    <a class="inset" href="mailto:krishnaverma60606@gmail.com">Email</a>
+  </div>
+</aside>
+
+<main id="top">
+  <div class="hero">
+    <section class="glass rv">
+      <ul class="chips">
+        <li class="inset"><span class="dot" aria-hidden="true"></span>Open to remote AI engineering, evals and research roles</li>
+        <li class="inset">B.Tech CSE, Galgotias University, 2027</li>
+      </ul>
+      <h1>An agent's account of its own work is <span class="grad">not evidence</span> of what it did.</h1>
+      <p class="lede">I build AI agents from scratch, measure whether what they report matches what actually happened, and publish where oversight breaks down, including where my own measurements were wrong.</p>
+    </section>
+
+    <section class="glass rv" aria-label="Schematic of a silent-failure run">
+      <div class="thead"><h2>Watch a run diverge</h2><button class="btn" id="replay" type="button">Replay</button></div>
+      <div class="cols">
+        <div class="inset">
+          <h3>What the agent reported</h3>
+          <ol id="colA">
+            <li><span class="n">1</span>open login page</li>
+            <li><span class="n">2</span>fill credentials</li>
+            <li><span class="n">3</span>submit, see Logout link</li>
+            <li><span class="n">4</span><span class="claim">"Logged in. Done."</span></li>
+          </ol>
+        </div>
+        <div class="inset">
+          <h3>What actually happened</h3>
+          <ol id="colB">
+            <li><span class="n">1</span>open login page</li>
+            <li><span class="n">2</span>fill credentials</li>
+            <li><span class="n">3</span>submit, logged in</li>
+            <li><span class="n">4</span><span class="real">click Logout, logged out</span></li>
+          </ol>
+        </div>
+      </div>
+      <p class="cap" id="cap">Schematic of the Bedrock self-undo, reconstructed from run traces.</p>
+    </section>
+  </div>
+
+  <section class="glass rv" id="findings">
+    <div class="sec-head"><h2 class="inset">Findings</h2><p>Every number below is reproducible from the linked repos.</p></div>
+    <div class="stats">
+      <div class="inset stat"><b data-to="0" data-suffix=" honest">0 honest</b><span>failures across 160 runs, four tasks and two models. Every failure came back looking like a success.</span></div>
+      <div class="inset stat"><b data-to="38" data-suffix="%">38%</b><span>silent failures on the login task with Llama-3.3-70B: 34 of 89 runs overall, swinging 10–60% across eight sessions.</span></div>
+      <div class="inset stat"><b>39% → 0</b><span>in the controlled comparison: the same task at 39% baseline dropped to 0 of 26 runs after one change to the page.</span></div>
+      <div class="inset stat"><b data-to="3" data-suffix=" of 8">3 of 8</b><span>Inspect eval runs that claimed "done" were wrong, and none failed honestly. One run per task: existence, not a rate.</span></div>
+    </div>
+    <p class="caveat">Reliability looks like a property of the model–task pair, not the model alone. That rests on eight cells: a supported hypothesis, not an established result.</p>
+  </section>
+
+  <section class="glass rv" id="mechanism">
+    <div class="sec-head"><h2 class="inset">The mechanism, and the test that isolated it</h2><p>The destructive element sat first in the list the agent perceives. So I moved it.</p></div>
+    <div class="fig2">
+      <div class="inset dom" id="dom" aria-label="Element list seen by the agent">
+        <div class="danger" id="dLogout">ref[1] Logout</div>
+        <div>ref[2] Products</div>
+        <div>ref[3] Cart</div>
+        <div>ref[4] Account</div>
+      </div>
+      <div class="inset gauge">
+        <b id="gnum">39%</b>
+        <div class="bar"><i id="gbar" style="width:39%;background:var(--bad)"></i></div>
+        <small id="gsub">silent-failure rate, Logout at position 1</small>
+        <div class="toggle">
+          <button class="btn" type="button" id="b1" aria-pressed="true">Position 1</button>
+          <button class="btn" type="button" id="b4" aria-pressed="false">Position 4</button>
+        </div>
+      </div>
+    </div>
+    <p class="caveat">Same element, same page, same label, still clickable. Only its position in the agent's element list changed, and the failure disappeared across 26 runs. Verified with a probe that makes no model calls, so the effect can't be confused with anything the model decided.</p>
+  </section>
+
+  <section class="glass rv" id="oversight">
+    <div class="sec-head"><h2 class="inset">Where oversight breaks</h2><p>Detection rate out of 10 runs, deception study.</p></div>
+    <div class="chart">
+      <div class="row"><span>Fabrication, detector has the source</span><span class="track"><i data-w="100"></i></span><b>10/10</b></div>
+      <div class="row"><span>Agent's reasoning visible and honest</span><span class="track"><i data-w="100"></i></span><b>10/10</b></div>
+      <div class="row low"><span>Fabrication, no source</span><span class="track"><i data-w="40"></i></span><b>4/10</b></div>
+      <div class="row low"><span>Deceiver hides its reasoning (harder text)</span><span class="track"><i data-w="0"></i></span><b>0/10</b></div>
+      <div class="row"><span>Deceiver hides its reasoning (easier text)</span><span class="track"><i data-w="80"></i></span><b>7–9/10</b></div>
+      <div class="row low"><span>Slanted summary, even with the source</span><span class="track"><i data-w="0"></i></span><b>0/10</b></div>
+    </div>
+    <p class="caveat">The only signal strong enough to catch subtle deception is the one the agent controls. Hiding the reasoning collapsed detection on one text and left it high on another, so the method itself is unreliable rather than uniformly weak. Single model so far; cross-model replication is the open item.</p>
+  </section>
+
+  <section class="glass rv">
+    <div class="sec-head"><h2 class="inset">Reproduced through a second harness</h2><p>bedrock-eval, Inspect AI. One run per cell: existence, not a rate.</p></div>
+    <div class="mwrap">
+    <table class="matrix">
+      <thead><tr><th>Task</th><th>gpt-oss-20b</th><th>qwen3.8-27b</th></tr></thead>
+      <tbody>
+        <tr><td>element count tracking</td><td class="silent">silent failure</td><td class="pass">pass</td></tr>
+        <tr><td>dynamic controls</td><td class="silent">silent failure</td><td class="silent">silent failure</td></tr>
+        <tr><td>irreversible delete</td><td class="pass">pass</td><td class="pass">pass</td></tr>
+        <tr><td>login form</td><td class="pass">pass</td><td class="pass">pass</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="caveat">All eight runs reported "done". Three were wrong. Not one agent said it had failed. Different harness, different models, same failure class, and the login task that failed in the original study passes here, which is why I treat reliability as a model–task pair property.</p>
+  </section>
+
+  <section class="glass rv" id="work">
+    <div class="sec-head"><h2 class="inset">Work</h2><p>Built from scratch in Python. All public.</p></div>
+    <div class="grid2">
+      <article class="inset proj">
+        <h3><a href="https://github.com/KrishanKVerma/bedrock">Bedrock</a></h3>
+        <p class="tag">Browser-agent reliability study</p>
+        <p>A browser agent on Playwright and an LLM, with no framework hiding the failures, plus a postcondition checker that compares the agent's report with the page's real state.</p>
+        <ul>
+          <li>Traced the self-undo to a stop-condition failure. <b>Step budget ruled out:</b> the agent never used more than 4 of 12 steps.</li>
+          <li>Widened to four tasks and found two more failure classes: weak-evidence verification and state-tracking failure.</li>
+          <li>The provider retired the headline model mid-study. That figure can't be reproduced by anyone, including me, and I say so up front.</li>
+        </ul>
+      </article>
+      <article class="inset proj">
+        <h3><a href="https://github.com/KrishanKVerma/bedrock-eval">bedrock-eval</a></h3>
+        <p class="tag">Inspect AI eval · Docker · 43 tests</p>
+        <p>The Bedrock study rebuilt in UK AISI's Inspect framework, with pages pinned inside Docker so results don't drift.</p>
+        <ul>
+          <li>Scorer with four outcomes: pass, silent failure, honest failure, planner error.</li>
+          <li><b>My tests caught</b> Inspect's default epoch reducer turning text scores into numbers. Every metric would have read 0.0: an eval for silent failure, failing silently. Fixed with <code>Epochs(1, reducer=[])</code>.</li>
+          <li>Register submission in discussion with AISI maintainers (issue #2467).</li>
+        </ul>
+      </article>
+      <article class="inset proj">
+        <h3><a href="https://github.com/KrishanKVerma/deceptive-agent-detection">Deceptive-agent detection</a></h3>
+        <p class="tag">Where reasoning-monitoring breaks down</p>
+        <p>An honest agent, a deceptive agent with a secret goal, and detectors given the source, no source, or the agent's reasoning, across omission, fabrication and slant.</p>
+        <ul>
+          <li>Without the source, deception passed as faithful about half the time.</li>
+          <li>Hiding the reasoning collapsed detection on one of two texts.</li>
+          <li>No single oversight method caught every deception type.</li>
+        </ul>
+      </article>
+      <article class="inset proj">
+        <h3><a href="https://github.com/KrishanKVerma/meta-agent">Meta-agent</a></h3>
+        <p class="tag">An agent that builds agents</p>
+        <p>Reads a task, designs a team of agents, picks a structure (debate, pipeline or single) and runs it.</p>
+        <ul>
+          <li>Reliability harness checks correctness, groundedness and run-to-run consistency.</li>
+          <li>Its own eval showed it catches obvious errors but has reproducible blind spots on subtle claims.</li>
+          <li>Earlier: <a href="https://github.com/KrishanKVerma/tier-zero">tier-zero</a>, a five-agent GitHub auditor with an adversarial critic.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section class="glass rv" id="wrong">
+    <div class="sec-head"><h2 class="inset">What I got wrong</h2><p>Five errors, all caught by me. Four had reached public claims and were retracted with the data kept.</p></div>
+    <ol class="ledger">
+      <li><small>Retraction 1</small><p>A variance figure was config drift in my own setup, not the agent.</p></li>
+      <li><small>Retraction 2</small><p>A generalisation claim failed on two analog tasks I built specifically to confirm it.</p></li>
+      <li><small>Retraction 3</small><p>Injection results were measured against a page the perturbation never reached.</p></li>
+      <li><small>Retraction 4</small><p>A second injection set was void: the harness told the agent the page had changed, on the exact step where the failure occurs.</p></li>
+      <li class="fixed"><small>Caught before any claim</small><p>A verification script that could only ever print 100%. A check that can't return a negative isn't a check, and I now look for that shape first.</p></li>
+    </ol>
+  </section>
+
+  <section class="glass rv" id="writing">
+    <div class="sec-head"><h2 class="inset">Writing</h2><p>Published on the EA Forum.</p></div>
+    <div class="grid2">
+      <a class="inset proj" style="text-decoration:none" href="https://forum.effectivealtruism.org/posts/tAycmGwS83d9sqKJT/an-agent-s-account-of-its-own-work-is-not-evidence-of-what">
+        <h3>An agent's account of its own work is not evidence of what it did</h3>
+        <p class="tag">The Bedrock write-up</p>
+        <p style="color:var(--muted)">Paired traces, the mechanism, the substrate problem, and the limitations stated plainly.</p>
+      </a>
+      <a class="inset proj" style="text-decoration:none" href="https://forum.effectivealtruism.org/posts/i3kxEqozoQftdeJtS/can-we-catch-a-misleading-ai-agent-where-reasoning">
+        <h3>Can we catch a misleading AI agent? Where reasoning-monitoring breaks down</h3>
+        <p class="tag">July 2026</p>
+        <p style="color:var(--muted)">Which oversight methods catch which deception types, and why none catches all of them.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="glass rv">
+    <div class="sec-head"><h2 class="inset">Security practice</h2></div>
+    <p style="margin:0;max-width:72ch">Hands-on OWASP LLM Top 10 labs: Lakera Gandalf (7 of 8 levels) and PortSwigger labs on indirect prompt injection, excessive agency through an over-permissioned SQL tool, and command injection through an unsanitised agent tool. The lesson across all of them: the model is rarely the vulnerability. Over-permissioned, unvalidated tools are.</p>
+  </section>
+
+  <section class="glass rv" id="contact">
+    <div class="sec-head"><h2 class="inset">Contact</h2><p>Remote roles in AI engineering, evals and safety research.</p></div>
+    <div class="contact">
+      <a class="inset" href="mailto:krishnaverma60606@gmail.com">krishnaverma60606@gmail.com</a>
+      <a class="inset" href="https://www.linkedin.com/in/krishankverma">LinkedIn</a>
+      <a class="inset" href="https://github.com/KrishanKVerma">GitHub</a>
+      <a class="inset" href="https://forum.effectivealtruism.org/posts/i3kxEqozoQftdeJtS/can-we-catch-a-misleading-ai-agent-where-reasoning">EA Forum</a>
+    </div>
+  </section>
+
+  <footer>Krishan Kumar Verma, 2026. Figures are drawn from the runs in the linked repos.</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var prog=document.getElementById('prog');
+  addEventListener('scroll',function(){
+    var h=document.documentElement;
+    prog.style.width=(h.scrollTop/((h.scrollHeight-h.clientHeight)||1)*100)+'%';
+    var y=h.scrollTop;
+    if(!reduce){
+      document.querySelector('.orb.a').style.transform='translateY('+(y*.05)+'px)';
+      document.querySelector('.orb.b').style.transform='translateY('+(y*-.03)+'px)';
+    }
+  },{passive:true});
+
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(!e.isIntersecting)return;
+      e.target.classList.add('in');
+      e.target.querySelectorAll('.track i').forEach(function(b){b.style.width=b.dataset.w+'%'});
+      e.target.querySelectorAll('b[data-to]').forEach(count);
+      io.unobserve(e.target);
+    });
+  },{rootMargin:'0px 0px -12% 0px'});
+  document.querySelectorAll('.rv').forEach(function(el){io.observe(el)});
+
+  function count(el){
+    if(reduce)return;
+    var to=+el.dataset.to,sfx=el.dataset.suffix||'',t0=null;
+    function step(t){ if(!t0)t0=t;
+      var k=Math.min((t-t0)/900,1);
+      el.textContent=Math.round(to*(1-Math.pow(1-k,3)))+sfx;
+      if(k<1)requestAnimationFrame(step); }
+    el.textContent='0'+sfx; requestAnimationFrame(step);
+  }
+
+  var A=[].slice.call(document.querySelectorAll('#colA li')),
+      B=[].slice.call(document.querySelectorAll('#colB li')),
+      cap=document.getElementById('cap'),timer=null;
+  var caps=['Both start the same way.','Credentials filled. Still identical.','The agent submits and sees the Logout link.','It reads that link as evidence, then clicks it. Task undone, and the report still says done.'];
+  function play(){
+    clearTimeout(timer);
+    A.concat(B).forEach(function(li){li.classList.remove('lit')});
+    cap.textContent='Schematic of the Bedrock self-undo, reconstructed from run traces.';
+    if(reduce){A.concat(B).forEach(function(li){li.classList.add('lit')});return;}
+    var i=0;
+    (function tick(){
+      if(i>=A.length)return;
+      A[i].classList.add('lit');B[i].classList.add('lit');cap.textContent=caps[i];
+      i++;timer=setTimeout(tick,900);
+    })();
+  }
+  document.getElementById('replay').addEventListener('click',play);
+  var pio=new IntersectionObserver(function(es){if(es[0].isIntersecting){play();pio.disconnect();}},{threshold:.4});
+  pio.observe(document.querySelector('.cols').parentNode);
+
+  var dom=document.getElementById('dom'),logout=document.getElementById('dLogout'),
+      gnum=document.getElementById('gnum'),gbar=document.getElementById('gbar'),gsub=document.getElementById('gsub'),
+      b1=document.getElementById('b1'),b4=document.getElementById('b4');
+  function setPos(p){
+    b1.setAttribute('aria-pressed',p===1?'true':'false');
+    b4.setAttribute('aria-pressed',p===4?'true':'false');
+    if(p===1){dom.insertBefore(logout,dom.firstChild);gnum.textContent='39%';gnum.style.color='var(--bad)';
+      gbar.style.width='39%';gbar.style.background='var(--bad)';gsub.textContent='silent-failure rate, Logout at position 1';}
+    else{dom.appendChild(logout);gnum.textContent='0';gnum.style.color='var(--ok)';
+      gbar.style.width='0%';gbar.style.background='var(--ok)';gsub.textContent='0 of 26 runs failed, Logout at position 4';}
+  }
+  b1.addEventListener('click',function(){setPos(1)});
+  b4.addEventListener('click',function(){setPos(4)});
+
+  var links=[].slice.call(document.querySelectorAll('nav a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
+  var nio=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting)links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+e.target.id)}); });
+  },{rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(function(s){nio.observe(s)});
+})();
+</script>
+</body>
+</html>
