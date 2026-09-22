@@ -176,6 +176,43 @@ footer{color:var(--muted);font-size:.8125rem;padding:.25rem .25rem 1rem}
 @media (max-width:860px){.shell{grid-template-columns:1fr}aside{position:static}nav{display:none}.grid2{grid-template-columns:1fr}.orb{filter:blur(48px)}}
 @media (max-width:520px){.cols{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.sec-head{flex-direction:column;align-items:flex-start}.sec-head p{text-align:left}.glass{padding:1.15rem;border-radius:16px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}.cols li{opacity:1;transform:none}html{scroll-behavior:auto}}
+
+/* ---- figures pass ---- */
+.tilt{transform-style:preserve-3d;will-change:transform}
+.sysfig{width:100%;height:auto;display:block}
+.sysfig .node{fill:var(--panel2);stroke:var(--rule)}
+.sysfig .node.hot{stroke:var(--bad)}
+.sysfig .node.good{stroke:var(--ok)}
+.sysfig text{fill:var(--ink);font:600 12px Manrope,sans-serif}
+.sysfig text.sm{fill:var(--muted);font:500 10.5px "JetBrains Mono",monospace}
+.sysfig .link{stroke:var(--rule);stroke-width:1.5;fill:none;stroke-dasharray:5 5;animation:flow 1.6s linear infinite}
+.sysfig .link.claim{stroke:var(--bad)}
+.sysfig .link.check{stroke:var(--ok)}
+@keyframes flow{to{stroke-dashoffset:-20}}
+.sysfig .pulse{fill:var(--a2);animation:travel 3.4s cubic-bezier(.5,0,.5,1) infinite}
+@keyframes travel{0%{opacity:0}10%{opacity:1}90%{opacity:1}100%{opacity:0}}
+
+.skills{display:grid;grid-template-columns:1.15fr 1fr;gap:1rem;align-items:center}
+.constellation{width:100%;height:auto}
+.constellation circle.k{fill:var(--panel2);stroke:var(--edge);transition:.3s;cursor:default}
+.constellation g:hover circle.k{stroke:var(--a1);filter:drop-shadow(0 0 10px var(--a1))}
+.constellation line{stroke:var(--rule);stroke-width:1}
+.constellation text{fill:var(--ink);font:600 11px Manrope,sans-serif;text-anchor:middle;dominant-baseline:middle}
+.constellation .hub{fill:url(#hubg);stroke:none}
+.skilllist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.6rem}
+.skilllist li{padding:.7rem .9rem;font-size:.9rem;border-radius:10px}
+.skilllist b{display:block;font-size:.8125rem;color:var(--muted);font-weight:700;margin-bottom:.1rem}
+
+.tl{position:relative;padding:.5rem 0 0}
+.tl ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem}
+.tl li{padding:1rem .9rem;border-radius:12px;position:relative;transition:.3s}
+.tl li:hover{transform:translateY(-4px);border-color:var(--a1);box-shadow:0 20px 40px -30px var(--a1)}
+.tl small{display:block;color:var(--muted);font-weight:700;font-size:.75rem;margin-bottom:.35rem}
+.tl strong{display:block;font-size:.95rem;margin-bottom:.3rem}
+.tl span{color:var(--muted);font-size:.8125rem;line-height:1.45}
+.tl .spine{position:absolute;left:0;right:0;top:-.4rem;height:1px;background:linear-gradient(90deg,transparent,var(--a1),var(--a2),transparent)}
+@media (max-width:900px){.tl ol{grid-template-columns:1fr 1fr}.skills{grid-template-columns:1fr}}
+@media (max-width:560px){.tl ol{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -196,6 +233,8 @@ footer{color:var(--muted);font-size:.8125rem;padding:.25rem .25rem 1rem}
       <li><a href="#findings">Findings</a></li>
       <li><a href="#mechanism">The mechanism</a></li>
       <li><a href="#oversight">Where oversight breaks</a></li>
+      <li><a href="#trajectory">Trajectory</a></li>
+      <li><a href="#skills">Skills</a></li>
       <li><a href="#work">Work</a></li>
       <li><a href="#wrong">What I got wrong</a></li>
       <li><a href="#writing">Writing</a></li>
@@ -306,6 +345,87 @@ footer{color:var(--muted);font-size:.8125rem;padding:.25rem .25rem 1rem}
     </table>
     </div>
     <p class="caveat">All eight runs reported "done". Three were wrong. Not one agent said it had failed. Different harness, different models, same failure class, and the login task that failed in the original study passes here, which is why I treat reliability as a model–task pair property.</p>
+  </section>
+
+
+  <section class="glass rv">
+    <div class="sec-head"><h2 class="inset">What I actually build</h2><p>The check that sits outside the agent, which is the whole argument.</p></div>
+    <svg class="sysfig" viewBox="0 0 760 210" role="img" aria-label="Diagram: an agent acts on a page and reports success, while a postcondition checker reads the real page state and can disagree">
+      <defs>
+        <linearGradient id="pg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="var(--a1)"/><stop offset="1" stop-color="var(--a2)"/>
+        </linearGradient>
+      </defs>
+      <rect class="node" x="8" y="70" width="140" height="60" rx="12"/>
+      <text x="78" y="94" text-anchor="middle">Planner (LLM)</text>
+      <text class="sm" x="78" y="112" text-anchor="middle">picks next action</text>
+
+      <rect class="node" x="200" y="70" width="140" height="60" rx="12"/>
+      <text x="270" y="94" text-anchor="middle">Browser</text>
+      <text class="sm" x="270" y="112" text-anchor="middle">Playwright, real DOM</text>
+
+      <rect class="node hot" x="392" y="12" width="150" height="58" rx="12"/>
+      <text x="467" y="36" text-anchor="middle">Agent's report</text>
+      <text class="sm" x="467" y="54" text-anchor="middle">"task complete"</text>
+
+      <rect class="node good" x="392" y="132" width="150" height="58" rx="12"/>
+      <text x="467" y="156" text-anchor="middle">Real page state</text>
+      <text class="sm" x="467" y="174" text-anchor="middle">read independently</text>
+
+      <rect class="node" x="600" y="70" width="152" height="60" rx="12"/>
+      <text x="676" y="94" text-anchor="middle">Postcondition check</text>
+      <text class="sm" x="676" y="112" text-anchor="middle">pass / silent failure</text>
+
+      <path class="link" d="M148 100 H200"/>
+      <path class="link claim" d="M340 100 C366 100 366 41 392 41"/>
+      <path class="link check" d="M340 100 C366 100 366 161 392 161"/>
+      <path class="link claim" d="M542 41 C574 41 574 100 600 100"/>
+      <path class="link check" d="M542 161 C574 161 574 100 600 100"/>
+      <circle class="pulse" r="4" cx="0" cy="0">
+        <animateMotion dur="3.4s" repeatCount="indefinite" path="M148 100 H200 L340 100 C366 100 366 161 392 161 C520 161 574 161 600 100"/>
+      </circle>
+      <text class="sm" x="676" y="40" text-anchor="middle">the two disagree</text>
+      <text class="sm" x="676" y="56" text-anchor="middle">in 34 of 89 login runs</text>
+    </svg>
+    <p class="caveat">Most agent stacks stop at the report. Everything I measure comes from reading the page myself and comparing. Built: the postcondition checker. Not built, and named as the next step: scoring an action before it is taken.</p>
+  </section>
+
+  <section class="glass rv" id="trajectory">
+    <div class="sec-head"><h2 class="inset">How the work compounds</h2><p>One line of enquiry, not five unrelated repos.</p></div>
+    <div class="tl"><div class="spine" aria-hidden="true"></div>
+      <ol>
+        <li class="inset"><small>Start</small><strong>tier-zero</strong><span>Five agents audit a profile, with a critic that argues until they converge. Taught me that agreement is not correctness.</span></li>
+        <li class="inset"><small>Then</small><strong>Meta-agent</strong><span>An agent that builds agents, plus a harness to score their output. The harness became the interesting half.</span></li>
+        <li class="inset"><small>Published</small><strong>Deception study</strong><span>If an agent wants to mislead you, which oversight method catches it? None catches all.</span></li>
+        <li class="inset"><small>Published</small><strong>Bedrock</strong><span>Agents that undo their own work and report success. Mechanism isolated, rate measured, errors retracted.</span></li>
+        <li class="inset"><small>Now</small><strong>bedrock-eval</strong><span>The same failure rebuilt in UK AISI's Inspect, so someone other than me can run it.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="glass rv" id="skills">
+    <div class="sec-head"><h2 class="inset">Skills</h2><p>Everything here was used to produce a result on this page.</p></div>
+    <div class="skills">
+      <svg class="constellation" viewBox="0 0 420 300" role="img" aria-label="Skill map centred on measurement, with engineering, evaluation and adversarial branches">
+        <defs><radialGradient id="hubg"><stop offset="0" stop-color="var(--a2)"/><stop offset="1" stop-color="var(--a1)"/></radialGradient></defs>
+        <line x1="210" y1="150" x2="90" y2="60"/><line x1="210" y1="150" x2="330" y2="62"/>
+        <line x1="210" y1="150" x2="70" y2="215"/><line x1="210" y1="150" x2="345" y2="205"/>
+        <line x1="210" y1="150" x2="210" y2="268"/>
+        <line x1="90" y1="60" x2="330" y2="62"/><line x1="70" y1="215" x2="210" y2="268"/><line x1="345" y1="205" x2="210" y2="268"/>
+        <g><circle class="hub" cx="210" cy="150" r="46"/><text x="210" y="145" style="fill:#fff">Measurement</text><text x="210" y="162" style="fill:#fff;font-size:10px;font-weight:500">discipline</text></g>
+        <g><circle class="k" cx="90" cy="60" r="40"/><text x="90" y="55">Python</text><text x="90" y="70" style="font-size:10px;font-weight:500">Playwright</text></g>
+        <g><circle class="k" cx="330" cy="62" r="40"/><text x="330" y="55">Evals</text><text x="330" y="70" style="font-size:10px;font-weight:500">Inspect, Docker</text></g>
+        <g><circle class="k" cx="70" cy="215" r="40"/><text x="70" y="210">Agents</text><text x="70" y="225" style="font-size:10px;font-weight:500">multi-agent, RAG</text></g>
+        <g><circle class="k" cx="345" cy="205" r="40"/><text x="345" y="200">Red-team</text><text x="345" y="215" style="font-size:10px;font-weight:500">OWASP LLM</text></g>
+        <g><circle class="k" cx="210" cy="268" r="30"/><text x="210" y="268">Writing</text></g>
+      </svg>
+      <ul class="skilllist">
+        <li class="inset"><b>Engineering</b>Python, Playwright, agent loops built without a framework, so failure modes stay visible.</li>
+        <li class="inset"><b>Evaluation</b>Inspect AI, Docker-pinned tasks, scorers, 43 tests, and the habit of testing the instrument before trusting it.</li>
+        <li class="inset"><b>Adversarial</b>OWASP LLM Top 10 labs, and a deceiver built specifically to defeat my own detector.</li>
+        <li class="inset"><b>Judgement</b>Five self-caught measurement errors and four public retractions, data kept.</li>
+      </ul>
+    </div>
   </section>
 
   <section class="glass rv" id="work">
@@ -468,6 +588,19 @@ footer{color:var(--muted);font-size:.8125rem;padding:.25rem .25rem 1rem}
   }
   b1.addEventListener('click',function(){setPos(1)});
   b4.addEventListener('click',function(){setPos(4)});
+
+
+  /* card tilt */
+  if(!reduce && matchMedia('(pointer:fine)').matches){
+    document.querySelectorAll('.proj,.stat,.tl li').forEach(function(c){
+      c.classList.add('tilt');
+      c.addEventListener('pointermove',function(e){
+        var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+        c.style.transform='perspective(800px) rotateX('+(-y*5)+'deg) rotateY('+(x*6)+'deg) translateY(-4px)';
+      });
+      c.addEventListener('pointerleave',function(){c.style.transform=''});
+    });
+  }
 
   var links=[].slice.call(document.querySelectorAll('nav a'));
   var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'))}).filter(Boolean);
